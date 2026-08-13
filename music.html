@@ -1,0 +1,607 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>מדף המוזיקה</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Assistant:wght@400;500;600;700&display=swap');
+  :root{
+    --wood-1:#241a22; --wood-2:#17101a;
+    --ledge:#3a2a3f; --ledge-2:#241726;
+    --paper:#f3eddd; --ink:#211a20; --ink-soft:#5b4d58;
+    --gold:#c9a24b; --gold-soft:#e0c88a; --line:#c9b9a0;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{direction:rtl;font-family:'Assistant',system-ui,sans-serif;color:var(--paper);
+    background:radial-gradient(120% 80% at 50% -10%, #3a2740 0%, var(--wood-1) 45%, var(--wood-2) 100%);min-height:100vh}
+  .wrap{max-width:1060px;margin:0 auto;padding:26px 20px 80px}
+  header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    border-bottom:1px solid rgba(201,162,75,.28);padding-bottom:18px}
+  .brand .eyebrow{font-size:12px;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:600}
+  .brand h1{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:36px;line-height:1;margin:2px 0 0}
+  .brand .count{font-size:13px;color:#b6a2b3;margin-top:6px}
+  .top-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{font-family:'Assistant',sans-serif;font-weight:600;font-size:14px;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;transition:filter .12s,transform .1s}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:#7c2d5a;color:#f6e9f0} .btn-primary:hover{filter:brightness(1.12)}
+  .btn-ghost{background:rgba(243,237,221,.08);color:#eaddc9;border:1px solid rgba(201,162,75,.3)}
+  .btn-ghost:hover{background:rgba(243,237,221,.14)}
+  .btn-quiet{background:transparent;color:#b6a2b3;border:1px solid rgba(182,162,179,.3)}
+  .btn:disabled{opacity:.5;cursor:default}
+
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:22px 2px 4px}
+  .search{flex:1 1 240px;display:flex;gap:8px}
+  .search input{flex:1;font-family:'Assistant',sans-serif;font-size:14px;padding:9px 12px;border-radius:8px;
+    border:1px solid rgba(201,162,75,.3);background:rgba(243,237,221,.06);color:var(--paper)}
+  .search input::placeholder{color:#9c8a99}
+
+  .section{margin-top:22px}
+  .sec-head{display:flex;align-items:center;gap:10px;margin:0 4px 12px}
+  .sec-head .lbl{font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:16px;color:var(--gold-soft)}
+  .sec-head .rule{flex:1;height:1px;background:linear-gradient(90deg,rgba(201,162,75,.35),rgba(201,162,75,0))}
+  .sec-head .n{font-size:12px;color:#8f7d8c}
+  /* cassette rack: thin horizontal spines, packed in columns inside a wooden case */
+  .rack{background:linear-gradient(180deg,#2c1e26,#1a1117);border:2px solid #3c2b32;border-radius:7px;
+    padding:11px 11px 6px;column-width:216px;column-gap:12px;
+    box-shadow:inset 0 3px 12px rgba(0,0,0,.55), 0 8px 20px -10px rgba(0,0,0,.5)}
+  .row-empty{color:#8f7d8c;font-size:13px;font-style:italic;padding:20px 8px}
+  .tape{break-inside:avoid;display:flex;align-items:stretch;height:27px;margin-bottom:5px;border-radius:3px;overflow:hidden;cursor:pointer;
+    background:linear-gradient(180deg,#18171b,#050506);box-shadow:0 1px 2px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05);transition:transform .1s}
+  .tape:hover{transform:translateX(-3px)}
+  .tape:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+  .tape .band{width:6px;flex:0 0 auto}
+  .tape .lbl{flex:1;margin:4px 5px;background:#efe6d2;border-radius:2px;display:flex;align-items:center;padding:0 7px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+  .tape .lbl .txt{font-family:'Assistant',sans-serif;font-size:10.5px;font-weight:600;color:#211a20;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tape .lbl .yr{margin-inline-start:auto;font-size:9px;color:#8a7a6a;padding-inline-start:6px;flex:0 0 auto}
+  .tape .holes{width:15px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:3px}
+  .tape .holes i{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.22)}
+
+  /* designed label cover (when no art) */
+  .label-cover{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px;position:relative}
+  .label-cover .lc-artist{font-family:'Assistant',sans-serif;font-size:9px;letter-spacing:.12em;opacity:.85;text-transform:uppercase}
+  .label-cover .lc-title{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:15px;line-height:1.1;margin-top:4px;color:#fff}
+  .label-cover .lc-dot{position:absolute;width:14px;height:14px;border-radius:50%;background:rgba(0,0,0,.25);border:2px solid rgba(255,255,255,.5)}
+
+  .empty{color:#b6a2b3;font-size:15px;padding:30px 12px;border:1px dashed rgba(201,162,75,.35);border-radius:10px;text-align:center}
+  .empty b{color:#eaddc9}
+
+  /* overlay */
+  .overlay{position:fixed;inset:0;z-index:50;background:rgba(12,7,14,.74);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .card{background:var(--paper);color:var(--ink);width:100%;max-width:760px;max-height:92vh;overflow:auto;border-radius:12px;
+    box-shadow:0 30px 70px -20px rgba(0,0,0,.7)}
+  .card-head{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line)}
+  .card-head h2{font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:18px;margin:0}
+  .x{background:none;border:none;font-size:24px;cursor:pointer;color:var(--ink-soft);padding:2px 8px;border-radius:6px}
+  .x:hover{background:rgba(0,0,0,.06)}
+  .card-body{padding:20px}
+
+  /* turntable / player */
+  .detail-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(34px) brightness(.45) saturate(1.35);transform:scale(1.2);z-index:0}
+  .detail-tint{position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,10,16,.5),rgba(18,10,16,.86));z-index:0}
+  .on-cover .card-head{background:transparent;border-bottom-color:rgba(255,255,255,.12)}
+  .on-cover .card-head h2, .on-cover .x{color:#f3eddd}
+  .detail-content{position:relative;z-index:1}
+  #detailBody{position:relative}
+  .on-cover .card-body{padding:0}
+  .on-cover .detail-content{padding:20px}
+  .on-cover{color:#f1e9df}
+  .on-cover .p-artist{color:#fff}
+  .on-cover .p-title{color:rgba(243,237,221,.78)}
+  .on-cover .chip{background:rgba(255,255,255,.14);color:#f1e9df}
+  .on-cover .formats button{background:rgba(255,255,255,.1);color:#e9ddcf;border-color:rgba(255,255,255,.18)}
+  .on-cover .formats button.on{background:#f3eddd;color:#211a20;border-color:#f3eddd}
+  .on-cover .backcard{background:rgba(15,9,14,.5);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:16px 18px;backdrop-filter:blur(6px)}
+  .on-cover .tracks .t-head{color:var(--gold-soft);border-bottom-color:rgba(255,255,255,.15)}
+  .on-cover .tracks li{color:#eadfd4} .on-cover .tracks li::before{color:rgba(255,255,255,.5)}
+  .on-cover .tracks .none{color:rgba(243,237,221,.6)}
+  .on-cover .actions{border-top-color:rgba(255,255,255,.14)}
+  .on-cover .btn-edit{color:#f3eddd;border-color:rgba(255,255,255,.28)}
+  .on-cover .btn-remove{color:#ff9b9b;border-color:rgba(255,155,155,.4)}
+  .player{display:flex;gap:20px;flex-wrap:wrap;align-items:center}
+  .stage{flex:0 0 260px;position:relative;height:230px;display:flex;align-items:center;justify-content:center;margin:0 auto}
+  .disc-cover{position:absolute;right:14px;width:170px;height:170px;border-radius:4px;overflow:hidden;z-index:3;
+    box-shadow:0 16px 30px -10px rgba(0,0,0,.5)}
+  .disc-cover img{width:100%;height:100%;object-fit:cover;display:block}
+  .spin{position:absolute;left:6px;width:186px;height:186px;z-index:2;animation:rot 14s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spin{animation:none}}
+  .cassette-wrap{position:absolute;left:0;right:0;display:flex;justify-content:center;z-index:2}
+
+  .info{flex:1 1 300px;min-width:260px}
+  .info .p-artist{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:24px;line-height:1.1;margin:0}
+  .info .p-title{font-size:17px;color:var(--ink-soft);margin:2px 0 0}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .chip{font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(0,0,0,.06);color:#4a3d46;letter-spacing:.03em}
+  .chip.accent{color:#fff}
+  .formats{display:flex;gap:6px;margin-top:14px}
+  .formats button{font-family:'Assistant',sans-serif;font-size:12.5px;padding:5px 12px;border-radius:20px;cursor:pointer;border:1px solid var(--line);background:#faf5e9;color:var(--ink-soft)}
+  .formats button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+  .tracks{margin-top:18px}
+  .tracks .t-head{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#8a5a7a;font-weight:700;margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .tracks ol{margin:0;padding:0;list-style:none;counter-reset:trk}
+  .tracks li{counter-increment:trk;font-size:14px;line-height:1.9;color:#332830;display:flex;gap:10px}
+  .tracks li::before{content:counter(trk,decimal-leading-zero);color:#b09;color:#a88;font-variant-numeric:tabular-nums;color:#9a8794;min-width:22px}
+  .tracks .none{font-size:13px;color:#8a7a86;font-style:italic}
+
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+  .btn-open{background:var(--ink);color:var(--paper)} .btn-open:hover{filter:brightness(1.3)}
+  .btn-edit{background:transparent;color:var(--ink);border:1px solid var(--line)} .btn-edit:hover{background:rgba(0,0,0,.05)}
+  .btn-remove{background:transparent;color:#a23; border:1px solid rgba(170,34,51,.35);margin-inline-start:auto}
+
+  /* form */
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px}
+  input[type=text],textarea{width:100%;font-family:'Assistant',sans-serif;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:#faf5e9;color:var(--ink)}
+  textarea{min-height:90px;resize:vertical;line-height:1.6}
+  .two{display:flex;gap:10px;flex-wrap:wrap}.two .field{flex:1 1 170px}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{font-size:13px;padding:7px 13px;border-radius:8px;cursor:pointer;border:1px solid var(--line);background:#faf5e9;color:var(--ink-soft);font-weight:600}
+  .seg button.on{background:#7c2d5a;color:#f6e9f0;border-color:#7c2d5a}
+  .search-row{display:flex;gap:8px;flex-wrap:wrap}.search-row input{flex:1 1 200px}
+  .status{font-size:13px;min-height:18px;color:var(--ink-soft);margin:4px 0 8px}
+  .status.err{color:#a23}.status.ok{color:#3f6b3a}
+  .form-actions{display:flex;gap:8px;margin-top:8px;padding-top:14px;border-top:1px solid var(--line)}
+  .ltr{direction:ltr;text-align:left}
+  @media (max-width:560px){.brand h1{font-size:28px}.stage{flex-basis:100%}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">אוסף התקליטים שלי</span>
+      <h1>מדף המוזיקה</h1>
+      <span class="count" id="count">—</span>
+    </div>
+    <div class="top-actions">
+      <button class="btn btn-primary" id="addBtn">+ הוסף אלבום</button>
+      <button class="btn btn-ghost" id="exportBtn">גיבוי</button>
+      <button class="btn btn-quiet" id="importBtn">שחזור</button>
+      <input type="file" id="importFile" accept="application/json" hidden />
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="search">
+      <input type="text" id="artistSearch" placeholder="חיפוש לפי אמן או אלבום…" />
+      <button class="btn btn-quiet" id="clearSearch">נקה</button>
+    </div>
+    <button class="btn btn-ghost" id="grabAll">משוך עטיפות לכל האוסף</button>
+  </div>
+
+  <div id="shelves"></div>
+</div>
+
+<!-- detail / player -->
+<div class="overlay" id="detailOverlay"><div class="card">
+  <div class="card-head"><h2 id="dHead">&nbsp;</h2><button class="x" data-close>&times;</button></div>
+  <div class="card-body" id="detailBody"></div>
+</div></div>
+
+<!-- add / edit -->
+<div class="overlay" id="formOverlay"><div class="card">
+  <div class="card-head"><h2 id="formTitle">הוסף אלבום</h2><button class="x" data-close>&times;</button></div>
+  <div class="card-body">
+    <div class="field"><label>חיפוש ברשת — שם אלבום או אמן</label>
+      <div class="search-row"><input type="text" id="q" placeholder="לדוגמה: Led Zeppelin IV" />
+        <button class="btn btn-primary" id="searchBtn">חפש ומלא</button></div>
+    </div>
+    <div class="status" id="searchStatus"></div>
+    <div class="field"><label>סגנון (מדף)</label>
+      <div class="seg" id="styleSeg">
+        <button type="button" data-style="israeli">ישראלי</button>
+        <button type="button" data-style="english">אנגלית / לועזי</button>
+        <button type="button" data-style="instrumental">ללא מילים</button>
+      </div>
+    </div>
+    <div class="two">
+      <div class="field"><label>אמן</label><input type="text" id="artist" /></div>
+      <div class="field"><label>שם האלבום</label><input type="text" id="title" /></div>
+    </div>
+    <div class="two">
+      <div class="field" style="flex:0 0 110px"><label>שנה</label><input type="text" id="year" inputmode="numeric" /></div>
+      <div class="field"><label>ז'אנר (מהרשת)</label><input type="text" id="genre" /></div>
+      <div class="field"><label>תקופה</label><input type="text" id="era" placeholder="שנות ה-70…" /></div>
+    </div>
+    <div class="field"><label>קישור לעטיפה</label><input type="text" id="coverUrl" class="ltr" placeholder="https://..." /></div>
+    <div class="field"><label>רשימת שירים (שורה לכל שיר)</label><textarea id="tracks" placeholder="שיר 1&#10;שיר 2&#10;..."></textarea></div>
+    <div class="form-actions"><button class="btn btn-primary" id="saveBtn">שמור למדף</button><button class="btn btn-edit" data-close>ביטול</button></div>
+  </div>
+</div></div>
+
+<script>
+(function(){
+  "use strict";
+  /* storage */
+  var mem={}, hasStore=!!(window.storage&&window.storage.get);
+  var hasLS=(function(){try{var k="__m_t";localStorage.setItem(k,"1");localStorage.removeItem(k);return true;}catch(e){return false;}})();
+  async function sget(k){if(hasStore){try{var r=await window.storage.get(k);return r?r.value:null;}catch(e){}}if(hasLS){try{return localStorage.getItem(k);}catch(e){}}return (k in mem)?mem[k]:null;}
+  async function sset(k,v){if(hasStore){try{await window.storage.set(k,v);return;}catch(e){}}if(hasLS){try{localStorage.setItem(k,v);return;}catch(e){}}mem[k]=v;}
+  async function sdel(k){if(hasStore){try{await window.storage.delete(k);return;}catch(e){}}if(hasLS){try{localStorage.removeItem(k);return;}catch(e){}}delete mem[k];}
+  /* scalable store: one key, cached in memory (ready for ~1000 albums) */
+  var DBKEY="music:db", DB=[], dbLoaded=false, saveT=null;
+  async function loadDB(){
+    if(dbLoaded) return DB;
+    var raw=await sget(DBKEY);
+    if(raw){ try{DB=JSON.parse(raw)||[];}catch(e){DB=[];} }
+    else { // one-time migration from old per-key format
+      var idxRaw=await sget("music:index");
+      if(idxRaw){ try{ var idx=JSON.parse(idxRaw)||[]; for(var i=0;i<idx.length;i++){ var r=await sget("music:album:"+idx[i]); if(r){ try{DB.push(JSON.parse(r));}catch(e){}} } }catch(e){} if(DB.length) await persistDB(); }
+    }
+    DB.forEach(function(a){ if(!a.style)a.style="english"; });
+    dbLoaded=true; return DB;
+  }
+  async function persistDB(){ await sset(DBKEY, JSON.stringify(DB)); }
+  function persistSoon(){ clearTimeout(saveT); saveT=setTimeout(persistDB,300); }
+  async function getAlbum(id){ await loadDB(); for(var i=0;i<DB.length;i++) if(DB[i].id===id) return DB[i]; return null; }
+  async function saveAlbum(a){ await loadDB(); var i=-1; for(var k=0;k<DB.length;k++) if(DB[k].id===a.id){i=k;break;} if(i>=0)DB[i]=a; else DB.push(a); await persistDB(); }
+  async function removeAlbum(id){ await loadDB(); DB=DB.filter(function(a){return a.id!==id;}); await persistDB(); }
+  async function allAlbums(){ await loadDB(); return DB.slice(); }
+
+  /* helpers */
+  function $(s){return document.querySelector(s);}
+  function el(t,c){var e=document.createElement(t);if(c)e.className=c;return e;}
+  function uid(){return "m"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+  function esc(s){return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function isHeb(s){return /[\u0590-\u05FF]/.test(s||"");}
+  function hslToHex(h,s,l){s/=100;l/=100;var a=s*Math.min(l,1-l);var f=function(n){var k=(n+h/30)%12;var c=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*c).toString(16).padStart(2,"0");};return "#"+f(0)+f(8)+f(4);}
+  function hueHash(str){var h=0;str=str||"x";for(var i=0;i<str.length;i++)h=(h*31+str.charCodeAt(i))>>>0;return h%360;}
+  function sig(a){ if(a.color)return a.color; return hslToHex(hueHash((a.artist||"")+(a.title||a.id)),60,47); }
+  function shade(hex,amt){var c=hex.replace("#","");if(c.length===3)c=c.split("").map(function(x){return x+x;}).join("");var n=parseInt(c,16),r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));return "rgb("+r+","+g+","+b+")";}
+  function toRgb(hex){hex=(hex||"").replace("#","");if(hex.length===3)hex=hex.split("").map(function(c){return c+c;}).join("");var n=parseInt(hex,16);if(isNaN(n))return {r:120,g:100,b:90};return {r:(n>>16)&255,g:(n>>8)&255,b:n&255};}
+  function rgbToHex(r,g,b){function h(x){x=Math.max(0,Math.min(255,Math.round(x)));var s=x.toString(16);return s.length<2?"0"+s:s;}return "#"+h(r)+h(g)+h(b);}
+  function tapeText(hex){var c=toRgb(hex);var l=(0.299*c.r+0.587*c.g+0.114*c.b)/255;return l>0.58?"#201a1e":"#f6efe2";}
+  // dominant colour of a cover image (works for embedded/base64 and CORS-enabled covers)
+  function dominantColor(url){
+    return new Promise(function(resolve){
+      try{
+        var img=new Image(); if(!/^data:/.test(url)) img.crossOrigin="anonymous";
+        img.onload=function(){
+          try{
+            var s=32,cv=document.createElement("canvas");cv.width=s;cv.height=s;var ctx=cv.getContext("2d");ctx.drawImage(img,0,0,s,s);
+            var d=ctx.getImageData(0,0,s,s).data,map={},bestK=null,bestC=0,ar=0,ag=0,ab=0,an=0;
+            for(var i=0;i<d.length;i+=4){var R=d[i],G=d[i+1],B=d[i+2];if(d[i+3]<128)continue;ar+=R;ag+=G;ab+=B;an++;
+              var mx=Math.max(R,G,B),mn=Math.min(R,G,B),sat=mx-mn;var w=1+sat/48;if(mx<38||mn>224)w*=0.25;
+              var key=(R>>5)+","+(G>>5)+","+(B>>5);map[key]=(map[key]||0)+w;if(map[key]>bestC){bestC=map[key];bestK=key;}}
+            if(bestK){var p=bestK.split(",");resolve(rgbToHex(p[0]*32+16,p[1]*32+16,p[2]*32+16));}
+            else if(an)resolve(rgbToHex(ar/an,ag/an,ab/an));else resolve(null);
+          }catch(e){resolve(null);}
+        };
+        img.onerror=function(){resolve(null);};
+        img.src=url;
+      }catch(e){resolve(null);}
+    });
+  }
+
+  var STYLES=[{key:"israeli",label:"ישראלי"},{key:"english",label:"אנגלית / לועזי"},{key:"instrumental",label:"ללא מילים"}];
+
+  function labelCover(a){
+    var c=sig(a);
+    return '<div class="label-cover" style="background:linear-gradient(150deg,'+c+','+shade(c,-40)+')">'+
+      '<div class="lc-dot"></div>'+
+      '<div class="lc-artist">'+esc(a.artist||"")+'</div>'+
+      '<div class="lc-title">'+esc(a.title||"")+'</div></div>';
+  }
+  function coverInner(a){
+    return a.coverUrl ? '<img loading="lazy" decoding="async" src="'+esc(a.coverUrl)+'" alt="עטיפה" onerror="this.parentNode.innerHTML=window.__label('+"'"+escAttr(a.id)+"'"+')"/>' : labelCover(a);
+  }
+  function escAttr(s){return (s||"").replace(/'/g,"\\'");}
+  window.__label=function(id){ var a=window.__albums&&window.__albums[id]; return a?labelCover(a):''; };
+
+  /* render shelves */
+  var search="", CAP=60, limits={};
+  async function render(){
+    var albums=await allAlbums();
+    window.__albums={}; albums.forEach(function(a){window.__albums[a.id]=a;});
+    $("#count").textContent = albums.length? (albums.length+" אלבומים באוסף") : "האוסף עוד ריק";
+    var q=search.trim().toLowerCase();
+    var filtered=albums.filter(function(a){ if(!q)return true; return ((a.artist||"")+" "+(a.title||"")).toLowerCase().indexOf(q)>=0; });
+    var host=$("#shelves"); host.innerHTML="";
+    if(!albums.length){ var e=el("div","empty"); e.innerHTML='האוסף ריק. לחץ <b>“+ הוסף אלבום”</b> — הקלד שם אמן/אלבום והפרטים יימשכו מהרשת.'; host.appendChild(e); return; }
+
+    STYLES.forEach(function(st){
+      var items=filtered.filter(function(a){return a.style===st.key;});
+      if(!items.length && q) return; // when searching, hide empty style shelves
+      var sec=el("div","section");
+      var head=el("div","sec-head");
+      var lbl=el("span","lbl");lbl.textContent=st.label;head.appendChild(lbl);
+      head.appendChild(el("div","rule"));
+      var n=el("span","n");n.textContent=items.length;head.appendChild(n);
+      sec.appendChild(head);
+      var rack=el("div","rack");
+      if(items.length){
+        var lim=limits[st.key]||CAP;
+        items.slice(0,lim).forEach(function(a){ rack.appendChild(albumEl(a)); });
+        sec.appendChild(rack);
+        if(items.length>lim){
+          var more=el("button","btn btn-quiet");
+          more.style.margin="10px 6px 0";
+          more.textContent="הצג עוד "+(items.length-lim)+" ↓";
+          more.addEventListener("click",function(){ limits[st.key]=lim+CAP; render(); });
+          sec.appendChild(more);
+        }
+      } else { var re=el("div","row-empty"); re.textContent="אין כאן אלבומים עדיין."; rack.appendChild(re); sec.appendChild(rack); }
+      host.appendChild(sec);
+    });
+    if(q && !host.children.length){ var e2=el("div","empty"); e2.innerHTML='לא נמצאו אלבומים ל“'+esc(search)+'”.'; host.appendChild(e2); }
+  }
+
+  function paintTape(d,color){
+    var band=d.querySelector(".band"),lbl=d.querySelector(".lbl"),txt=d.querySelector(".txt"),yr=d.querySelector(".yr");
+    if(band)band.style.background=shade(color,-40);
+    if(lbl)lbl.style.background=color;
+    var tc=tapeText(color);
+    if(txt)txt.style.color=tc;
+    if(yr){yr.style.color=tc;yr.style.opacity=".7";}
+  }
+  function albumEl(a){
+    var d=el("div","tape");
+    d.setAttribute("tabindex","0"); d.setAttribute("role","button");
+    d.title=(a.artist?a.artist+" — ":"")+(a.title||"");
+    d.setAttribute("aria-label","פתח "+(a.title||"")+" של "+(a.artist||""));
+    var band=el("div","band"); d.appendChild(band);
+    var lbl=el("div","lbl");
+    var txt=el("span","txt"); txt.textContent=(a.artist?a.artist+" — ":"")+(a.title||"ללא שם"); lbl.appendChild(txt);
+    if(a.year){ var yr=el("span","yr"); yr.textContent=a.year; lbl.appendChild(yr); }
+    d.appendChild(lbl);
+    var holes=el("div","holes"); holes.innerHTML='<i></i><i></i>'; d.appendChild(holes);
+    paintTape(d, a.coverColor||sig(a));
+    if(a.coverUrl && !a.coverColor){
+      dominantColor(a.coverUrl).then(function(col){ if(col){ a.coverColor=col; paintTape(d,col); saveAlbum(a); } });
+    }
+    d.addEventListener("click",function(){openDetail(a.id);});
+    d.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();openDetail(a.id);}});
+    return d;
+  }
+
+  /* format visuals */
+  function vinylSvg(a){
+    var c=sig(a);
+    return '<svg viewBox="0 0 200 200"><defs><radialGradient id="sheen" cx="35%" cy="30%"><stop offset="0%" stop-color="rgba(255,255,255,.18)"/><stop offset="40%" stop-color="rgba(255,255,255,0)"/></radialGradient></defs>'+
+      '<circle cx="100" cy="100" r="98" fill="#0e0e10"/>'+
+      '<g fill="none" stroke="rgba(255,255,255,.07)">'+[86,78,70,62,54].map(function(r){return '<circle cx="100" cy="100" r="'+r+'"/>';}).join("")+'</g>'+
+      '<circle cx="100" cy="100" r="42" fill="'+c+'"/>'+
+      '<circle cx="100" cy="100" r="42" fill="none" stroke="rgba(0,0,0,.25)"/>'+
+      '<text x="100" y="92" text-anchor="middle" font-family="Assistant,sans-serif" font-size="10" font-weight="700" fill="#fff">'+esc((a.artist||"").slice(0,16))+'</text>'+
+      '<text x="100" y="108" text-anchor="middle" font-family="Frank Ruhl Libre,serif" font-size="11" font-weight="900" fill="rgba(255,255,255,.92)">'+esc((a.title||"").slice(0,18))+'</text>'+
+      '<circle cx="100" cy="100" r="5" fill="#f3eddd"/>'+
+      '<circle cx="100" cy="100" r="98" fill="url(#sheen)"/></svg>';
+  }
+  function cdSvg(a){
+    var c=sig(a);
+    return '<svg viewBox="0 0 200 200"><defs><radialGradient id="cd" cx="50%" cy="50%"><stop offset="34%" stop-color="'+c+'"/><stop offset="36%" stop-color="#e9e9ef"/><stop offset="55%" stop-color="#c9d2dd"/><stop offset="70%" stop-color="#eef0f4"/><stop offset="85%" stop-color="#c2c9d4"/><stop offset="100%" stop-color="#e6e9ee"/></radialGradient></defs>'+
+      '<circle cx="100" cy="100" r="98" fill="url(#cd)"/>'+
+      '<circle cx="100" cy="100" r="34" fill="none" stroke="rgba(0,0,0,.15)"/>'+
+      '<circle cx="100" cy="100" r="16" fill="#f3eddd" stroke="rgba(0,0,0,.15)"/>'+
+      '<circle cx="100" cy="100" r="7" fill="#0e0e10"/>'+
+      '<path d="M100 4 A96 96 0 0 1 196 100" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="6"/></svg>';
+  }
+  function cassetteSvg(a){
+    var c=sig(a);
+    return '<svg viewBox="0 0 220 140"><rect x="4" y="4" width="212" height="132" rx="10" fill="'+c+'"/>'+
+      '<rect x="4" y="4" width="212" height="132" rx="10" fill="none" stroke="rgba(0,0,0,.2)"/>'+
+      '<rect x="24" y="20" width="172" height="46" rx="4" fill="#f3eddd"/>'+
+      '<text x="110" y="40" text-anchor="middle" font-family="Assistant,sans-serif" font-size="12" font-weight="700" fill="#211a20">'+esc((a.artist||"").slice(0,22))+'</text>'+
+      '<text x="110" y="57" text-anchor="middle" font-family="Frank Ruhl Libre,serif" font-size="13" font-weight="900" fill="#5b4d58">'+esc((a.title||"").slice(0,24))+'</text>'+
+      '<rect x="34" y="78" width="152" height="46" rx="6" fill="rgba(0,0,0,.18)"/>'+
+      '<circle cx="78" cy="101" r="17" fill="#f3eddd"/><circle cx="78" cy="101" r="6" fill="'+shade(c,-30)+'"/>'+
+      '<circle cx="142" cy="101" r="17" fill="#f3eddd"/><circle cx="142" cy="101" r="6" fill="'+shade(c,-30)+'"/>'+
+      '<circle cx="14" cy="130" r="3" fill="rgba(0,0,0,.3)"/><circle cx="206" cy="130" r="3" fill="rgba(0,0,0,.3)"/></svg>';
+  }
+
+  /* detail */
+  var curId=null, curFormat="vinyl";
+  async function openDetail(id){
+    var a=await getAlbum(id); if(!a)return; curId=id; curFormat=a.format||"vinyl";
+    $("#dHead").innerHTML="&nbsp;";
+    renderDetail(a);
+    showOverlay($("#detailOverlay"));
+  }
+  function stageHtml(a){
+    if(curFormat==="cd") return '<div class="disc-cover">'+coverInner(a)+'</div><div class="spin" style="left:14px">'+cdSvg(a)+'</div>';
+    if(curFormat==="cassette"){
+      if(a.cassetteUrl) return '<div class="cassette-wrap" style="top:52px"><img src="'+esc(a.cassetteUrl)+'" alt="קסטה" style="width:220px;border-radius:8px;box-shadow:0 16px 30px -10px rgba(0,0,0,.6)"/></div>';
+      return '<div class="cassette-wrap" style="top:44px">'+cassetteSvg(a)+'</div>';
+    }
+    return '<div class="disc-cover">'+coverInner(a)+'</div><div class="spin">'+vinylSvg(a)+'</div>';
+  }
+  function renderDetail(a){
+    var c=sig(a);
+    var hasCover=!!a.coverUrl;
+    var card=$("#detailOverlay").querySelector(".card");
+    card.classList.toggle("on-cover", hasCover);
+    var styleLabel=(STYLES.filter(function(s){return s.key===a.style;})[0]||{}).label||"";
+    var chips="";
+    if(styleLabel) chips+='<span class="chip'+(hasCover?'':' accent')+'"'+(hasCover?'':' style="background:'+c+'"')+'>'+esc(styleLabel)+'</span>';
+    if(a.year) chips+='<span class="chip">'+esc(a.year)+'</span>';
+    if(a.era) chips+='<span class="chip">'+esc(a.era)+'</span>';
+    if(a.genre) chips+='<span class="chip">'+esc(a.genre)+'</span>';
+    var tracks=(a.tracks&&a.tracks.length)? '<ol>'+a.tracks.map(function(t){return '<li>'+esc(t)+'</li>';}).join("")+'</ol>' : '<div class="none">אין עדיין רשימת שירים — אפשר למשוך מהרשת או להוסיף בעריכה.</div>';
+    var backOpen = hasCover ? '<div class="backcard">' : '<div>';
+    var bg = hasCover ? '<div class="detail-bg" style="background-image:url('+esc(a.coverUrl)+')"></div><div class="detail-tint"></div>' : '';
+    $("#detailBody").innerHTML= bg+
+      '<div class="detail-content">'+
+        '<div class="player">'+
+          '<div class="stage" id="stage">'+stageHtml(a)+'</div>'+
+          '<div class="info">'+
+            '<h3 class="p-artist">'+esc(a.artist||"")+'</h3>'+
+            '<p class="p-title">'+esc(a.title||"")+'</p>'+
+            '<div class="chips">'+chips+'</div>'+
+            '<div class="formats" id="formats"><button data-f="vinyl">תקליט</button><button data-f="cd">דיסק</button><button data-f="cassette">קסטה</button></div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="tracks" style="margin-top:18px">'+backOpen+'<div class="t-head">צד ב׳ · רשימת שירים</div>'+tracks+'</div>'+
+        '<div class="actions">'+
+          '<button class="btn btn-edit" id="grabInfo">משוך עטיפה + שירים</button>'+
+          '<button class="btn btn-edit" id="editAlbum">ערוך פרטים</button>'+
+          '<button class="btn btn-remove" id="removeAlbum">הסר</button>'+
+        '</div>'+
+      '</div>';
+    Array.prototype.forEach.call(document.querySelectorAll("#formats button"),function(b){
+      if(b.getAttribute("data-f")===curFormat)b.classList.add("on");
+      b.addEventListener("click",async function(){ curFormat=b.getAttribute("data-f"); var fresh=await getAlbum(a.id); if(fresh){fresh.format=curFormat;await saveAlbum(fresh);} $("#stage").innerHTML=stageHtml(a); Array.prototype.forEach.call(document.querySelectorAll("#formats button"),function(x){x.classList.remove("on");}); b.classList.add("on"); });
+    });
+    $("#grabInfo").addEventListener("click",async function(){
+      var btn=$("#grabInfo"); btn.disabled=true; var old=btn.textContent; btn.textContent="מחפש…";
+      var fresh=await getAlbum(a.id)||a; var info=await itunesLookup(fresh.artist+" "+fresh.title);
+      if(info){ if(info.cover&&!fresh.coverUrl)fresh.coverUrl=info.cover; if(info.tracks&&info.tracks.length&&!(fresh.tracks&&fresh.tracks.length))fresh.tracks=info.tracks; if(info.year&&!fresh.year)fresh.year=info.year; if(info.genre&&!fresh.genre)fresh.genre=info.genre; await saveAlbum(fresh); openDetail(a.id); }
+      else { btn.textContent="לא נמצא"; setTimeout(function(){btn.disabled=false;btn.textContent=old;},1500); }
+    });
+    $("#editAlbum").addEventListener("click",function(){closeOverlay($("#detailOverlay"));openForm(a);});
+    $("#removeAlbum").addEventListener("click",async function(){ if(confirm("להסיר את “"+(a.title||"")+"” מהאוסף?")){await removeAlbum(a.id);closeOverlay($("#detailOverlay"));render();} });
+  }
+
+  /* form */
+  var editingId=null, formStyle="english";
+  function setSeg(v){formStyle=v;Array.prototype.forEach.call(document.querySelectorAll("#styleSeg button"),function(b){b.classList.toggle("on",b.getAttribute("data-style")===v);});}
+  Array.prototype.forEach.call(document.querySelectorAll("#styleSeg button"),function(b){b.addEventListener("click",function(){setSeg(b.getAttribute("data-style"));});});
+  function openForm(a){
+    editingId=a?a.id:null;
+    $("#formTitle").textContent=a?"ערוך אלבום":"הוסף אלבום";
+    $("#q").value="";$("#searchStatus").textContent="";$("#searchStatus").className="status";
+    $("#artist").value=a?a.artist||"":""; $("#title").value=a?a.title||"":"";
+    $("#year").value=a?a.year||"":""; $("#genre").value=a?a.genre||"":""; $("#era").value=a?a.era||"":"";
+    $("#coverUrl").value=a?a.coverUrl||"":""; $("#tracks").value=a&&a.tracks?a.tracks.join("\n"):"";
+    setSeg(a?(a.style||"english"):"english");
+    showOverlay($("#formOverlay"));
+  }
+  $("#addBtn").addEventListener("click",function(){openForm(null);});
+  $("#saveBtn").addEventListener("click",async function(){
+    var tracks=$("#tracks").value.split("\n").map(function(s){return s.trim();}).filter(Boolean);
+    var a={id:editingId||uid(),style:formStyle,artist:$("#artist").value.trim(),title:$("#title").value.trim(),
+      year:$("#year").value.trim(),genre:$("#genre").value.trim(),era:$("#era").value.trim(),
+      coverUrl:$("#coverUrl").value.trim(),tracks:tracks,notes:"",format:"vinyl"};
+    if(!a.title&&!a.artist){setStatus("צריך לפחות אמן או שם אלבום.","err");return;}
+    if(editingId){var old=await getAlbum(editingId);if(old){a.notes=old.notes;a.format=old.format||"vinyl";a.color=old.color;}}
+    await saveAlbum(a);closeOverlay($("#formOverlay"));render();
+  });
+  function setStatus(m,k){var s=$("#searchStatus");s.textContent=m;s.className="status "+(k||"");}
+
+  /* iTunes search */
+  function mapStyle(genre,artist,country){
+    if(isHeb(artist)||country==="ISR") return "israeli";
+    var g=(genre||"").toLowerCase();
+    if(/classic|jazz|soundtrack|instrumental|new age|score|ambient/.test(g)) return "instrumental";
+    return "english";
+  }
+  /* iTunes via JSONP (bypasses CORS; no iTunes app needed) */
+  function jsonp(url){
+    return new Promise(function(resolve,reject){
+      var cb="__itcb"+Math.random().toString(36).slice(2);
+      var s=document.createElement("script");
+      var t=setTimeout(function(){cleanup();reject(new Error("timeout"));},9000);
+      function cleanup(){clearTimeout(t);try{delete window[cb];}catch(e){window[cb]=undefined;}if(s.parentNode)s.parentNode.removeChild(s);}
+      window[cb]=function(data){cleanup();resolve(data);};
+      s.onerror=function(){cleanup();reject(new Error("neterr"));};
+      s.src=url+(url.indexOf("?")>=0?"&":"?")+"callback="+cb;
+      document.body.appendChild(s);
+    });
+  }
+  async function itunesSearch(q){
+    var url="https://itunes.apple.com/search?term="+encodeURIComponent(q)+"&entity=album&limit=1";
+    var d=await jsonp(url);
+    if(!d||!d.results||!d.results.length)return null; var v=d.results[0];
+    return {artist:v.artistName||"",title:v.collectionName||"",year:(v.releaseDate||"").slice(0,4),
+      genre:v.primaryGenreName||"",cover:(v.artworkUrl100||"").replace("100x100bb","600x600bb"),
+      country:v.country||"",collectionId:v.collectionId};
+  }
+  async function itunesTracks(collectionId){
+    try{ var d=await jsonp("https://itunes.apple.com/lookup?id="+collectionId+"&entity=song&limit=60");
+      return (d.results||[]).filter(function(x){return x.wrapperType==="track";}).sort(function(a,b){return (a.trackNumber||0)-(b.trackNumber||0);}).map(function(x){return x.trackName;});
+    }catch(e){return[];}
+  }
+  async function itunesLookup(q){
+    try{ var info=await itunesSearch(q); if(!info)return null;
+      if(info.collectionId){ info.tracks=await itunesTracks(info.collectionId); }
+      return info;
+    }catch(e){return null;}
+  }
+  $("#searchBtn").addEventListener("click",async function(){
+    var q=$("#q").value.trim(); if(!q){$("#q").focus();return;}
+    var btn=$("#searchBtn");btn.disabled=true;setStatus("מחפש ברשת…","");
+    try{
+      var info=await itunesLookup(q);
+      if(info){
+        if(info.artist)$("#artist").value=info.artist;
+        if(info.title)$("#title").value=info.title;
+        if(info.year)$("#year").value=info.year;
+        if(info.genre)$("#genre").value=info.genre;
+        if(info.cover)$("#coverUrl").value=info.cover;
+        if(info.tracks&&info.tracks.length)$("#tracks").value=info.tracks.join("\n");
+        setSeg(mapStyle(info.genre,info.artist,info.country));
+        setStatus("נמצא ✓ בדוק את הסגנון ושמור.","ok");
+      } else setStatus("לא נמצא אוטומטית — מלא ידנית.","err");
+    }catch(e){ setStatus("החיפוש לא זמין כאן (אולי חסום). מלא ידנית.","err"); }
+    finally{ btn.disabled=false; }
+  });
+
+  /* search box */
+  $("#artistSearch").addEventListener("input",function(){search=this.value;render();});
+  $("#clearSearch").addEventListener("click",function(){search="";$("#artistSearch").value="";render();});
+
+  /* bulk: pull covers (and missing tracks) for the whole collection */
+  $("#grabAll").addEventListener("click",async function(){
+    var btn=$("#grabAll"); if(btn.disabled)return; btn.disabled=true;
+    var albums=await allAlbums();
+    var todo=albums.filter(function(a){return !a.coverUrl;});
+    if(!todo.length){ btn.textContent="הכל כבר עם עטיפה ✓"; setTimeout(function(){btn.disabled=false;btn.textContent="משוך עטיפות לכל האוסף";},1800); return; }
+    var done=0, ok=0;
+    for(var i=0;i<todo.length;i++){
+      btn.textContent="מושך… "+(done+1)+"/"+todo.length;
+      try{
+        var info=await itunesLookup(todo[i].artist+" "+todo[i].title);
+        if(info){
+          var fresh=await getAlbum(todo[i].id);
+          if(fresh){ if(info.cover&&!fresh.coverUrl){fresh.coverUrl=info.cover;ok++;} if(info.tracks&&info.tracks.length&&!(fresh.tracks&&fresh.tracks.length))fresh.tracks=info.tracks; if(info.year&&!fresh.year)fresh.year=info.year; if(info.genre&&!fresh.genre)fresh.genre=info.genre; await saveAlbum(fresh); }
+        }
+      }catch(e){}
+      done++;
+      await new Promise(function(r){setTimeout(r,220);}); // be gentle
+    }
+    render();
+    btn.textContent="נמשכו "+ok+" עטיפות ✓";
+    setTimeout(function(){btn.disabled=false;btn.textContent="משוך עטיפות לכל האוסף";},2500);
+  });
+
+  /* backup / restore */
+  $("#exportBtn").addEventListener("click",async function(){
+    var albums=await allAlbums();
+    var blob=new Blob([JSON.stringify({app:"music",version:1,albums:albums},null,2)],{type:"application/json"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="music-shelf-"+new Date().toISOString().slice(0,10)+".json";document.body.appendChild(a);a.click();a.remove();
+  });
+  $("#importBtn").addEventListener("click",function(){$("#importFile").click();});
+  $("#importFile").addEventListener("change",function(e){
+    var f=e.target.files[0];if(!f)return;var rd=new FileReader();
+    rd.onload=async function(){try{var data=JSON.parse(rd.result);var albums=data.albums||data;if(!Array.isArray(albums))throw 0;
+      for(var i=0;i<albums.length;i++){var a=albums[i];if(!a.id)a.id=uid();if(!a.style)a.style="english";await saveAlbum(a);}
+      render();alert("שוחזרו "+albums.length+" אלבומים.");}catch(err){alert("קובץ לא תקין.");}$("#importFile").value="";};
+    rd.readAsText(f);
+  });
+
+  /* overlay plumbing */
+  function showOverlay(o){o.classList.add("show");}
+  function closeOverlay(o){o.classList.remove("show");}
+  Array.prototype.forEach.call(document.querySelectorAll("[data-close]"),function(b){b.addEventListener("click",function(){closeOverlay(b.closest(".overlay"));});});
+  Array.prototype.forEach.call(document.querySelectorAll(".overlay"),function(o){o.addEventListener("mousedown",function(e){if(e.target===o)closeOverlay(o);});});
+  document.addEventListener("keydown",function(e){if(e.key==="Escape")Array.prototype.forEach.call(document.querySelectorAll(".overlay.show"),closeOverlay);});
+
+  /* seed demo once */
+  async function seedDemo(){
+    var seeded=await sget("music:seeded"); await loadDB();
+    if(seeded||DB.length) return;
+    var demo=[
+      {id:"dm_mashina",style:"israeli",artist:"משינה",title:"משינה",year:"1985",era:"שנות ה-80",genre:"פופ־רוק / גל חדש",color:"#b83a3a",
+        tracks:["רכבת לילה לקהיר","אופטיקאי מדופלם","עתיד מתוק","אנה","בלדה לסוכן כפול"],format:"vinyl"},
+      {id:"dm_lz4",style:"english",artist:"Led Zeppelin",title:"Led Zeppelin IV",year:"1971",era:"70s",genre:"Hard Rock",color:"#b5732b",
+        tracks:["Black Dog","Rock and Roll","The Battle of Evermore","Stairway to Heaven","Misty Mountain Hop","Four Sticks","Going to California","When the Levee Breaks"],format:"vinyl"},
+      {id:"dm_lz1",style:"english",artist:"Led Zeppelin",title:"Led Zeppelin",year:"1969",era:"60s",genre:"Blues Rock",color:"#586274",
+        tracks:["Good Times Bad Times","Babe I'm Gonna Leave You","You Shook Me","Dazed and Confused","Your Time Is Gonna Come","Black Mountain Side","Communication Breakdown","I Can't Quit You Baby","How Many More Times"],format:"vinyl"},
+      {id:"dm_kob",style:"instrumental",artist:"Miles Davis",title:"Kind of Blue",year:"1959",era:"50s",genre:"Jazz",color:"#2f6bb0",
+        tracks:["So What","Freddie Freeloader","Blue in Green","All Blues","Flamenco Sketches"],format:"vinyl"}
+    ];
+    for(var i=0;i<demo.length;i++){ await saveAlbum(demo[i]); }
+    await sset("music:seeded","1");
+  }
+
+  (async function(){ await seedDemo(); render(); })();
+})();
+</script>
