@@ -140,6 +140,13 @@
   .search-row{display:flex;gap:8px;flex-wrap:wrap}.search-row input{flex:1 1 200px}
   .status{font-size:13px;min-height:18px;color:var(--ink-soft);margin:4px 0 8px}
   .status.err{color:#a23}.status.ok{color:#3f6b3a}
+  .results{display:flex;flex-direction:column;gap:6px;margin:2px 0 10px;max-height:300px;overflow:auto}
+  .res{display:flex;gap:10px;align-items:center;padding:6px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:#faf5e9}
+  .res:hover{background:#f0e7d5}
+  .res img{width:46px;height:46px;border-radius:4px;object-fit:cover;flex:0 0 auto;background:#e6dcc4}
+  .res .rmeta{flex:1;min-width:0}
+  .res .rt{font-weight:700;font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .res .ra{font-size:11.5px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .form-actions{display:flex;gap:8px;margin-top:8px;padding-top:14px;border-top:1px solid var(--line)}
   .ltr{direction:ltr;text-align:left}
   @media (max-width:560px){.brand h1{font-size:28px}.stage{flex-basis:100%}}
@@ -186,6 +193,7 @@
         <button class="btn btn-primary" id="searchBtn">חפש ומלא</button></div>
     </div>
     <div class="status" id="searchStatus"></div>
+    <div class="results" id="searchResults"></div>
     <div class="field"><label>סגנון (מדף)</label>
       <div class="seg" id="styleSeg">
         <button type="button" data-style="israeli">ישראלי</button>
@@ -458,7 +466,7 @@
   function openForm(a){
     editingId=a?a.id:null;
     $("#formTitle").textContent=a?"ערוך אלבום":"הוסף אלבום";
-    $("#q").value="";$("#searchStatus").textContent="";$("#searchStatus").className="status";
+    $("#q").value="";$("#searchStatus").textContent="";$("#searchStatus").className="status";var _sr=$("#searchResults");if(_sr)_sr.innerHTML="";
     $("#artist").value=a?a.artist||"":""; $("#title").value=a?a.title||"":"";
     $("#year").value=a?a.year||"":""; $("#genre").value=a?a.genre||"":""; $("#era").value=a?a.era||"":"";
     $("#coverUrl").value=a?a.coverUrl||"":""; $("#tracks").value=a&&a.tracks?a.tracks.join("\n"):"";
@@ -516,21 +524,36 @@
       return info;
     }catch(e){return null;}
   }
+  async function itunesSearchMulti(q){
+    var url="https://itunes.apple.com/search?term="+encodeURIComponent(q)+"&entity=album&limit=12";
+    var d=await jsonp(url);
+    if(!d||!d.results)return [];
+    return d.results.map(function(v){return {artist:v.artistName||"",title:v.collectionName||"",year:(v.releaseDate||"").slice(0,4),
+      genre:v.primaryGenreName||"",cover:(v.artworkUrl100||"").replace("100x100bb","200x200bb"),cover600:(v.artworkUrl100||"").replace("100x100bb","600x600bb"),
+      country:v.country||"",collectionId:v.collectionId};});
+  }
   $("#searchBtn").addEventListener("click",async function(){
     var q=$("#q").value.trim(); if(!q){$("#q").focus();return;}
     var btn=$("#searchBtn");btn.disabled=true;setStatus("מחפש ברשת…","");
+    var box=$("#searchResults"); box.innerHTML="";
     try{
-      var info=await itunesLookup(q);
-      if(info){
-        if(info.artist)$("#artist").value=info.artist;
-        if(info.title)$("#title").value=info.title;
-        if(info.year)$("#year").value=info.year;
-        if(info.genre)$("#genre").value=info.genre;
-        if(info.cover)$("#coverUrl").value=info.cover;
-        if(info.tracks&&info.tracks.length)$("#tracks").value=info.tracks.join("\n");
-        setSeg(mapStyle(info.genre,info.artist,info.country));
-        setStatus("נמצא ✓ בדוק את הסגנון ושמור.","ok");
-      } else setStatus("לא נמצא אוטומטית — מלא ידנית.","err");
+      var list=await itunesSearchMulti(q);
+      if(!list.length){ setStatus("לא נמצא — נסה שם אחר או מלא ידנית.","err"); return; }
+      setStatus("בחר את האלבום הנכון:","ok");
+      list.forEach(function(v){
+        var row=el("div","res");
+        row.innerHTML='<img loading="lazy" src="'+esc(v.cover)+'" alt=""/><div class="rmeta"><div class="rt">'+esc(v.title||"")+'</div><div class="ra">'+esc(v.artist||"")+(v.year?' · '+v.year:'')+(v.genre?' · '+esc(v.genre):'')+'</div></div>';
+        row.addEventListener("click",async function(){
+          $("#artist").value=v.artist; $("#title").value=v.title;
+          if(v.year)$("#year").value=v.year; if(v.genre)$("#genre").value=v.genre; if(v.cover600)$("#coverUrl").value=v.cover600;
+          setSeg(mapStyle(v.genre,v.artist,v.country));
+          setStatus("טוען שירים…","");
+          var tracks=v.collectionId?await itunesTracks(v.collectionId):[];
+          if(tracks.length)$("#tracks").value=tracks.join("\n");
+          box.innerHTML=""; setStatus("נבחר ✓ בדוק את הסגנון ושמור.","ok");
+        });
+        box.appendChild(row);
+      });
     }catch(e){ setStatus("החיפוש לא זמין כאן (אולי חסום). מלא ידנית.","err"); }
     finally{ btn.disabled=false; }
   });
